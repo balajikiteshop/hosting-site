@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dev",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "prisma:migrate",
+      "type": "shell",
+      "command": "npx prisma migrate dev",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "prisma:generate",
+      "type": "shell",
+      "command": "npx prisma generate",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}
