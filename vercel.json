@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm dlx prisma generate && pnpm build",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": "nextjs",
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+  "crons": [{
+    "path": "/api/maintenance",
+    "schedule": "0 0 * * *"
+  }],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "$NEXT_PUBLIC_APP_URL" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,DELETE,PATCH,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self' https://checkout.razorpay.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; font-src 'self' data:; connect-src 'self' https://api.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; frame-ancestors 'none';"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    { "source": "/home", "destination": "/" }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_APP_URL": "https://balajikitehouse.vercel.app",
+    "DATABASE_URL": "@database_url",
+    "RAZORPAY_KEY_ID": "@razorpay_key_id",
+    "RAZORPAY_KEY_SECRET": "@razorpay_key_secret",
+    "NEXT_PUBLIC_RAZORPAY_KEY_ID": "@next_public_razorpay_key_id",
+    "ADMIN_USERNAME": "@admin_username",
+    "ADMIN_PASSWORD": "@admin_password",
+    "JWT_SECRET": "@jwt_secret"
+  }
+}
