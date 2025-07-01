@@ -16,10 +16,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is authenticated on mount
-    const authStatus = localStorage.getItem('isAdminAuthenticated')
-    setIsAuthenticated(authStatus === 'true')
-  }, [])
+    // Check authentication status on mount and when route changes
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/check', {
+          credentials: 'include' // Important for cookies
+        });
+        const isAuth = response.ok;
+        setIsAuthenticated(isAuth);
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
@@ -28,25 +39,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for cookies
         body: JSON.stringify({ username, password }),
-      })
+      });
 
       if (response.ok) {
-        setIsAuthenticated(true)
-        localStorage.setItem('isAdminAuthenticated', 'true')
-        return true
+        setIsAuthenticated(true);
+        return true;
       }
-      return false
+      return false;
     } catch (error) {
-      console.error('Login error:', error)
-      return false
+      console.error('Login error:', error);
+      return false;
     }
   }
 
-  const logout = () => {
-    setIsAuthenticated(false)
-    localStorage.removeItem('isAdminAuthenticated')
-    router.push('/')
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } finally {
+      setIsAuthenticated(false);
+      router.push('/');
+    }
   }
 
   return (

@@ -32,37 +32,33 @@ export async function POST(request: NextRequest) {
     const order = await prisma.order.update({
       where: { id: orderId },
       data: {
-        paymentStatus: 'PAID',
+        paymentStatus: 'paid',
         paymentId: razorpayPaymentId,
-        status: 'CONFIRMED'
+        status: 'processing'
       },
       include: {
         items: {
           include: {
-            product: true
+            product: true,
+            variant: true
           }
         }
       }
     })
 
-    // Update product stock
-    for (const item of order.items) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            decrement: item.quantity
-          }
-        }
-      })
-    }
+    // Note: Stock was already decreased at order creation
+    // Here we only update the order status
 
-    return NextResponse.json({ success: true, order })
+    return NextResponse.json({
+      success: true,
+      message: 'Payment verified',
+      order
+    })
 
   } catch (error) {
-    console.error('Error verifying payment:', error)
+    console.error('Payment verification failed:', error)
     return NextResponse.json(
-      { error: 'Failed to verify payment' },
+      { error: 'Payment verification failed' },
       { status: 500 }
     )
   }

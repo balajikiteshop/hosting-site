@@ -2,77 +2,95 @@
 
 import { useState } from 'react'
 import { ShoppingCart } from 'lucide-react'
-
-interface Product {
-  id: string
-  name: string
-  price: number
-  image: string | null
-  stock: number
-}
+import type { Product, ProductVariant } from '@/types/product'
+import { useRouter } from 'next/navigation'
 
 interface AddToCartButtonProps {
   product: Product
+  variant?: ProductVariant | null
+  quantity: number
+  disabled?: boolean
   className?: string
 }
 
-export default function AddToCartButton({ product, className = "" }: AddToCartButtonProps) {
+export default function AddToCartButton({ 
+  product, 
+  variant,
+  quantity = 1,
+  disabled = false,
+  className = ""
+}: AddToCartButtonProps) {
   const [isAdding, setIsAdding] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  const addToCart = () => {
+  const addToCart = async () => {
+    if (disabled || isAdding) return
     setIsAdding(true)
+    setError(null)
     
     try {
-      // Get existing cart from localStorage
-      const existingCart = localStorage.getItem('cart')
-      let cart = existingCart ? JSON.parse(existingCart) : []
-
-      // Check if product already exists in cart
-      const existingItemIndex = cart.findIndex((item: any) => item.product.id === product.id)
-
-      if (existingItemIndex >= 0) {
-        // Update quantity if product exists
-        cart[existingItemIndex].quantity += 1
-      } else {
-        // Add new item to cart
-        cart.push({
-          id: `cart_${product.id}_${Date.now()}`,
-          quantity: 1,
-          product: product
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          variantId: variant?.id,
+          quantity
         })
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to add to cart')
       }
 
-      // Save updated cart to localStorage
-      localStorage.setItem('cart', JSON.stringify(cart))
-      
-      // Show success feedback (you could replace this with a toast notification)
-      alert('Product added to cart!')
-      
-    } catch (error) {
-      console.error('Error adding to cart:', error)
-      alert('Failed to add product to cart')
+      // Refresh page to update cart count
+      router.refresh()
+
+      // Optional: Show success message
+      const button = document.activeElement as HTMLButtonElement
+      const originalText = button.innerText
+      button.innerText = 'Added! ✓'
+      setTimeout(() => {
+        button.innerText = originalText
+      }, 2000)
+
+    } catch (err: any) {
+      console.error('Error adding to cart:', err)
+      setError(err.message)
     } finally {
       setIsAdding(false)
     }
   }
 
+  const maxStock = variant ? variant.stock : product.stock
+  const outOfStock = maxStock < 1
+  const finalPrice = variant ? variant.price : product.price
+
   return (
-    <button
-      onClick={addToCart}
-      disabled={isAdding || product.stock === 0}
-      className={`btn-success flex items-center justify-center space-x-2 hover-lift disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none px-4 py-2 ${className}`}
-    >
-      {isAdding ? (
-        <>
-          <div className="spinner"></div>
-          <span>Adding...</span>
-        </>
-      ) : (
-        <>
-          <ShoppingCart size={16} />
-          <span>Add to Cart</span>
-        </>
+    <div className="flex flex-col items-start gap-2">
+      {error && (
+        <p className="text-red-500 text-sm">{error}</p>
       )}
-    </button>
+      <button
+        onClick={addToCart}
+        disabled={disabled || outOfStock || isAdding}
+        className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      >
+        <ShoppingCart className="w-5 h-5" />
+        {isAdding ? (
+          'Adding...'
+        ) : outOfStock ? (
+          'Out of Stock'
+        ) : (
+          <>
+            Add to Cart - ₹{finalPrice.toFixed(2)}
+          </>
+        )}
+      </button>
+    </div>
   )
 }

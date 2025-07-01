@@ -3,107 +3,146 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('Start seeding...')
+  // Clean up existing data
+  await prisma.cartItem.deleteMany()
+  await prisma.cart.deleteMany()
+  await prisma.orderItem.deleteMany()
+  await prisma.order.deleteMany()
+  await prisma.productVariant.deleteMany()
+  await prisma.product.deleteMany()
+  await prisma.category.deleteMany()
 
   // Create categories
-  const traditionalCategory = await prisma.category.create({
+  const kitesCategory = await prisma.category.create({
     data: {
-      name: 'Traditional Kites',
-      description: 'Classic and traditional kite designs'
+      name: 'Kites',
+      description: 'Traditional and modern kites for all occasions'
     }
   })
 
-  const modernCategory = await prisma.category.create({
+  const threadsCategory = await prisma.category.create({
     data: {
-      name: 'Modern Kites',
-      description: 'Contemporary and innovative kite designs'
+      name: 'Threads',
+      description: 'High-quality kite flying threads and strings'
     }
   })
 
   const accessoriesCategory = await prisma.category.create({
     data: {
       name: 'Accessories',
-      description: 'Kite flying accessories and tools'
+      description: 'Essential kite flying accessories and tools'
     }
   })
 
-  // Create sample user
-  const user = await prisma.user.create({
+  // Create products with variants
+  const patangKite = await prisma.product.create({
     data: {
-      email: 'customer@example.com',
-      name: 'Sample Customer',
-      phone: '+91 9876543210',
-      address: '123 Sample Street, Sample City'
+      name: 'Traditional Patang Kite',
+      description: 'Classic Indian fighter kite perfect for competitions',
+      price: 49.99,
+      stock: 100,
+      imageUrl: 'https://ik.imagekit.io/balajikitehouse/patang.jpg',
+      categoryId: kitesCategory.id,
+      variants: {
+        create: [
+          {
+            sku: 'PATANG-S',
+            name: 'Small',
+            price: 49.99,
+            stock: 50,
+            attributes: {
+              size: 'Small',
+              material: 'Paper',
+              color: 'Multi'
+            }
+          },
+          {
+            sku: 'PATANG-L',
+            name: 'Large',
+            price: 69.99,
+            stock: 50,
+            attributes: {
+              size: 'Large',
+              material: 'Paper',
+              color: 'Multi'
+            }
+          }
+        ]
+      }
     }
   })
 
-  // Create products
-  const products = [
-    {
-      name: 'Classic Diamond Kite',
-      description: 'A beautiful traditional diamond-shaped kite perfect for beginners.',
-      price: 299,
+  const manjhaThread = await prisma.product.create({
+    data: {
+      name: 'Special Manjha Thread',
+      description: 'Premium quality kite flying thread',
+      price: 199.99,
       stock: 50,
-      categoryId: traditionalCategory.id
-    },
-    {
-      name: 'Fighter Kite',
-      description: 'Traditional fighter kite for competitive flying.',
-      price: 199,
-      stock: 75,
-      categoryId: traditionalCategory.id
-    },
-    {
-      name: 'Box Kite',
-      description: 'Stable and sturdy box kite ideal for windy conditions.',
-      price: 899,
-      stock: 25,
-      categoryId: modernCategory.id
-    },
-    {
-      name: 'Delta Wing Kite',
-      description: 'Modern triangular kite with excellent stability.',
-      price: 649,
-      stock: 30,
-      categoryId: modernCategory.id
-    },
-    {
-      name: 'Stunt Kite',
-      description: 'Professional dual-line stunt kite for advanced maneuvers.',
-      price: 1299,
-      stock: 15,
-      categoryId: modernCategory.id
-    },
-    {
-      name: 'Kite String (100m)',
-      description: 'High-quality kite flying string, 100 meters.',
-      price: 99,
-      stock: 100,
-      categoryId: accessoriesCategory.id
-    },
-    {
-      name: 'Kite Reel',
-      description: 'Durable plastic kite reel for easy handling.',
-      price: 149,
-      stock: 60,
-      categoryId: accessoriesCategory.id
-    },
-    {
-      name: 'Tail Attachments Set',
-      description: 'Colorful tail attachments to stabilize your kite.',
-      price: 79,
-      stock: 80,
-      categoryId: accessoriesCategory.id
+      imageUrl: 'https://ik.imagekit.io/balajikitehouse/manjha.jpg',
+      categoryId: threadsCategory.id,
+      variants: {
+        create: [
+          {
+            sku: 'MANJHA-500',
+            name: '500 meters',
+            price: 199.99,
+            stock: 30,
+            attributes: {
+              length: '500m',
+              strength: 'Regular'
+            }
+          },
+          {
+            sku: 'MANJHA-1000',
+            name: '1000 meters',
+            price: 349.99,
+            stock: 20,
+            attributes: {
+              length: '1000m',
+              strength: 'Regular'
+            }
+          }
+        ]
+      }
     }
-  ]
+  })
 
-  for (const product of products) {
-    await prisma.product.create({
-      data: product
-    })
-  }
+  const kiteReel = await prisma.product.create({
+    data: {
+      name: 'Professional Kite Reel',
+      description: 'Heavy-duty kite reel for smooth thread control',
+      price: 299.99,
+      stock: 30,
+      imageUrl: 'https://ik.imagekit.io/balajikitehouse/reel.jpg',
+      categoryId: accessoriesCategory.id,
+      variants: {
+        create: [
+          {
+            sku: 'REEL-PLASTIC',
+            name: 'Plastic',
+            price: 299.99,
+            stock: 20,
+            attributes: {
+              material: 'Plastic',
+              color: 'Black'
+            }
+          },
+          {
+            sku: 'REEL-METAL',
+            name: 'Metal',
+            price: 499.99,
+            stock: 10,
+            attributes: {
+              material: 'Metal',
+              color: 'Silver'
+            }
+          }
+        ]
+      }
+    }
+  })
 
-  console.log('Seeding finished.')
+  console.log('Database seeded!')
 }
 
 main()

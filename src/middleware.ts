@@ -1,41 +1,37 @@
+import { auth } from './app/auth'
 import { NextResponse } from 'next/server'
+import { adminMiddleware } from './middleware/admin'
 import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
-  // Add security headers to all responses
-  const response = NextResponse.next()
-  
-  // Security headers
-  const securityHeaders = new Headers(response.headers)
-  securityHeaders.set('X-DNS-Prefetch-Control', 'on')
-  securityHeaders.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
-  securityHeaders.set('X-XSS-Protection', '1; mode=block')
-  securityHeaders.set('X-Frame-Options', 'SAMEORIGIN')
-  securityHeaders.set('X-Content-Type-Options', 'nosniff')
-  securityHeaders.set('Referrer-Policy', 'origin-when-cross-origin')
-  
-  // Check if it's an admin route
-  const path = request.nextUrl.pathname
-  if (path.startsWith('/admin')) {
-    const authCookie = request.cookies.get('isAdminAuthenticated')
-    const isAuthenticated = authCookie?.value === 'true'
+// Add security headers to a response
+function addSecurityHeaders(response: NextResponse) {
+  response.headers.set('X-DNS-Prefetch-Control', 'on')
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'origin-when-cross-origin')
+  return response
+}
 
-    // If not authenticated or cookie is invalid, redirect to login
-    if (!isAuthenticated) {
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('from', request.nextUrl.pathname)
-      return NextResponse.redirect(loginUrl)
+// Main middleware function
+export async function middleware(request: NextRequest) {
+  // First check for admin routes
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    const adminResponse = await adminMiddleware(request)
+    if (adminResponse) {
+      return addSecurityHeaders(adminResponse)
     }
   }
 
-  // Apply security headers to the response
-  const finalResponse = NextResponse.next()
-  securityHeaders.forEach((value, key) => {
-    finalResponse.headers.set(key, value)
-  })
-  return finalResponse
+  // For all other routes, apply standard auth and security headers
+  const response = NextResponse.next()
+  return addSecurityHeaders(response)
 }
 
 export const config = {
-  matcher: '/admin/:path*',
+  matcher: [
+    // Apply middleware to all routes except static assets
+    '/((?!_next/static|_next/image|favicon.ico).*)'
+  ]
 }

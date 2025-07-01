@@ -1,5 +1,12 @@
 import Razorpay from 'razorpay'
 
+interface RazorpayOrderParams {
+  amount: number;
+  orderId: string;
+  receipt: string;
+  currency?: string;
+}
+
 // Initialize Razorpay with error handling and validation
 const initializeRazorpay = () => {
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -23,45 +30,43 @@ export const getRazorpay = () => {
 }
 
 // Create Razorpay order with validation and error handling
-export const createRazorpayOrder = async (amount: number, currency = 'INR') => {
+export const createRazorpayOrder = async ({
+  amount,
+  orderId,
+  receipt,
+  currency = 'INR'
+}: RazorpayOrderParams) => {
   try {
     // Validate amount
     if (!amount || amount <= 0) {
       throw new Error('Invalid order amount')
     }
 
-    const razorpay = getRazorpay()
-    
-    // Create unique receipt ID with timestamp and random string
-    const receiptId = `rcpt_${Date.now()}_${Math.random().toString(36).substring(7)}`
-
-    const orderOptions = {
-      amount: Math.round(amount * 100), // Convert to paise and ensure integer
-      currency,
-      receipt: receiptId,
-      payment_capture: 1, // Auto-capture payment
-      notes: {
-        source: 'Balaji Kite House',
-        env: process.env.NODE_ENV,
-      }
+    // Validate orderId and receipt
+    if (!orderId || !receipt) {
+      throw new Error('Order ID and receipt are required')
     }
 
-    const order = await razorpay.orders.create(orderOptions)
-    
-    // Validate order creation response
-    if (!order.id) {
+    const razorpay = getRazorpay()
+
+    // Create the order
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount), // Ensure amount is an integer in paise
+      currency,
+      receipt,
+      notes: {
+        orderId
+      }
+    })
+
+    if (!order || !order.id) {
       throw new Error('Failed to create Razorpay order')
     }
 
-    return {
-      ...order,
-      keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      currency: order.currency,
-      receipt: order.receipt,
-    }
+    return order
   } catch (error: any) {
     console.error('Razorpay order creation failed:', error)
-    throw new Error(error.message || 'Failed to create payment order')
+    throw new Error(error.message || 'Failed to create Razorpay order')
   }
 }
 

@@ -1,14 +1,54 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import Image from 'next/image'
 import AddToCartButton from '@/components/AddToCartButton'
 
 async function getProducts() {
-  const products = await prisma.product.findMany({
+  const rawProducts = await prisma.product.findMany({
     where: { isActive: true },
-    include: { category: true },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      price: true,
+      stock: true,
+      imageUrl: true,
+      categoryId: true,
+      isActive: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          description: true
+        }
+      },
+      variants: {
+        where: { isActive: true },
+        orderBy: { price: 'asc' },
+        select: {
+          id: true,
+          sku: true,
+          name: true,
+          price: true,
+          stock: true,
+          imageUrl: true,
+          attributes: true,
+          isActive: true,
+          productId: true
+        }
+      }
+    }
   })
-  return products
+
+  // Convert the raw products to match our Product type
+  return rawProducts.map(p => ({
+    ...p,
+    variants: p.variants.map(v => ({
+      ...v,
+      attributes: v.attributes as Record<string, string | undefined>
+    }))
+  }))
 }
 
 async function getCategories() {
@@ -70,11 +110,14 @@ export default async function ProductsPage() {
             >
               <div className="product-image-enhanced">
                 {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="relative h-48">
+                    <Image
+                      src={product.imageUrl}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                 ) : (
                   <div className="text-6xl relative z-10 animate-float">🪁</div>
                 )}
@@ -86,7 +129,18 @@ export default async function ProductsPage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors">{product.name}</h3>
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-bold text-blue-600">₹{product.price}</span>
+                  {product.variants.length > 0 ? (
+                    <span className="text-2xl font-bold text-blue-600">
+                      From ₹{Math.min(
+                        product.price,
+                        ...product.variants.map(v => v.price)
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-2xl font-bold text-blue-600">
+                      ₹{product.price}
+                    </span>
+                  )}
                   <span className="status-badge-enhanced status-pending-enhanced">
                     Stock: {product.stock}
                   </span>
@@ -99,13 +153,9 @@ export default async function ProductsPage() {
                     View Details
                   </Link>
                   <AddToCartButton 
-                    product={{
-                      id: product.id,
-                      name: product.name,
-                      price: product.price,
-                      image: product.imageUrl,
-                      stock: product.stock
-                    }}
+                    product={product}
+                    quantity={1}
+                    className="flex-1"
                   />
                 </div>
               </div>
@@ -116,12 +166,6 @@ export default async function ProductsPage() {
         <div className="text-center py-12 animate-fadeIn">
           <div className="text-6xl mb-4 animate-float">🪁</div>
           <p className="text-lg text-gray-600 mb-4">No products available yet.</p>
-          <Link
-            href="/admin"
-            className="btn-primary hover-lift"
-          >
-            Add Products (Admin)
-          </Link>
         </div>
       )}
     </div>
