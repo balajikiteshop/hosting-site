@@ -41,7 +41,7 @@ async function main() {
       description: 'Classic Indian fighter kite perfect for competitions',
       price: 49.99,
       stock: 100,
-      imageUrl: 'https://ik.imagekit.io/balajikitehouse/patang.jpg',
+      imageUrl: 'https://ik.imagekit.io/balajikitehouse/patang.png',
       categoryId: kitesCategory.id,
       variants: {
         create: [
@@ -78,7 +78,7 @@ async function main() {
       description: 'Premium quality kite flying thread',
       price: 199.99,
       stock: 50,
-      imageUrl: 'https://ik.imagekit.io/balajikitehouse/manjha.jpg',
+      imageUrl: 'https://ik.imagekit.io/balajikitehouse/manjha.png',
       categoryId: threadsCategory.id,
       variants: {
         create: [
@@ -113,7 +113,7 @@ async function main() {
       description: 'Heavy-duty kite reel for smooth thread control',
       price: 299.99,
       stock: 30,
-      imageUrl: 'https://ik.imagekit.io/balajikitehouse/reel.jpg',
+      imageUrl: 'https://ik.imagekit.io/balajikitehouse/reel.png',
       categoryId: accessoriesCategory.id,
       variants: {
         create: [
