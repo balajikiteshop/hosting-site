@@ -17,7 +17,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, description, price, stock, categoryId, image } = body
+    const { name, description, price, stock, categoryId, imageUrl } = body
 
     const product = await prisma.product.create({
       data: {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         price: parseFloat(price),
         stock: parseInt(stock),
         categoryId,
-        image
+        imageUrl
       },
       include: { category: true }
     })

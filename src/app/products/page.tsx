@@ -69,9 +69,9 @@ export default async function ProductsPage() {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="product-image-enhanced">
-                {product.image ? (
+                {product.imageUrl ? (
                   <img
-                    src={product.image}
+                    src={product.imageUrl}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
@@ -80,7 +80,9 @@ export default async function ProductsPage() {
                 )}
               </div>
               <div className="p-6">
-                <div className="status-badge-enhanced status-confirmed-enhanced mb-3">{product.category.name}</div>
+                <div className="status-badge-enhanced status-confirmed-enhanced mb-3">
+                  {product.category?.name || 'Uncategorized'}
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors">{product.name}</h3>
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
                 <div className="flex justify-between items-center mb-4">
@@ -101,7 +103,7 @@ export default async function ProductsPage() {
                       id: product.id,
                       name: product.name,
                       price: product.price,
-                      image: product.image,
+                      image: product.imageUrl,
                       stock: product.stock
                     }}
                   />

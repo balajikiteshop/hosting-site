@@ -31,9 +31,9 @@ export default async function ProductPage({ params }: { params: { id: string } }
         {/* Product Image */}
         <div className="animate-slideIn">
           <div className="aspect-square image-placeholder rounded-lg overflow-hidden card-enhanced">
-            {product.image ? (
+            {product.imageUrl ? (
               <img
-                src={product.image}
+                src={product.imageUrl}
                 alt={product.name}
                 className="w-full h-full object-cover hover-scale"
               />
@@ -45,7 +45,9 @@ export default async function ProductPage({ params }: { params: { id: string } }
 
         {/* Product Details */}
         <div className="animate-fadeIn">
-          <div className="status-badge-enhanced status-confirmed-enhanced mb-4">{product.category.name}</div>
+          <div className="status-badge-enhanced status-confirmed-enhanced mb-4">
+            {product.category?.name || 'Uncategorized'}
+          </div>
           <h1 className="text-3xl md:text-4xl font-bold heading-gradient mb-4 text-shadow">
             {product.name}
           </h1>
@@ -96,7 +98,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
                     id: product.id,
                     name: product.name,
                     price: product.price,
-                    image: product.image,
+                    image: product.imageUrl,
                     stock: product.stock
                   }}
                   className="flex-1"

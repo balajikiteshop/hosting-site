@@ -86,15 +86,19 @@ model CartItem {
 }
 
 model Order {
-  id            String   @id @default(cuid())
-  orderNumber   String   @unique
-  customerName  String
-  customerEmail String
-  totalAmount   Float
-  status        String   @default("pending") // pending, confirmed, delivered
-  paymentStatus String   @default("pending") // pending, paid, failed
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  shippingAddress String
+  totalAmount     Float
+  status          String   @default("pending") // pending, confirmed, delivered
+  paymentStatus   String   @default("pending") // pending, paid, failed
+  razorpayOrderId String?
+  paymentId       String?  // To store Razorpay payment ID after successful payment
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
