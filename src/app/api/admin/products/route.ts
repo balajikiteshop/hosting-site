@@ -25,6 +25,10 @@ export async function POST(request: NextRequest) {
         name: data.name,
         description: data.description,
         categoryId: data.categoryId,
+        price: data.price,
+        stock: data.stock,
+        imageUrl: data.imageUrl,
+        isActive: data.isActive ?? true, // Default to true if not provided
         variants: {
           create: data.variants
         }

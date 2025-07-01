@@ -6,14 +6,12 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnAdmin = nextUrl.pathname.startsWith("/admin");
       const isOnCheckout = nextUrl.pathname.startsWith("/checkout");
       const isOnOrders = nextUrl.pathname.startsWith("/orders");
       
-      if (isOnAdmin) {
-        // Only admin emails can access admin pages
-        const isAdmin = auth?.user?.email?.endsWith("@balajikitehouse.com");
-        return isAdmin;
+      // Admin routes are handled by separate JWT middleware
+      if (nextUrl.pathname.startsWith("/admin")) {
+        return false; // Let admin middleware handle these routes
       }
 
       if (isOnCheckout || isOnOrders) {

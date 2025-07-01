@@ -47,7 +47,7 @@ export async function PUT(
     const { 
       name, 
       description, 
-      basePrice,
+      price,
       imageUrl, 
       stock,
       isActive = true,
@@ -59,7 +59,7 @@ export async function PUT(
       data: {
         name,
         description,
-        basePrice,
+        price,
         imageUrl,
         stock,
         isActive,

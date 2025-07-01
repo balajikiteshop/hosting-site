@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import { authConfig } from "./config";
-import { z } from "zod";
 
 export const { auth, signIn, signOut } = NextAuth(authConfig);
 

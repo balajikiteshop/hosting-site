@@ -6,13 +6,8 @@ export async function POST() {
     headers: { 'Content-Type': 'application/json' },
   })
 
-  // Clear the authentication cookie
-  response.cookies.set('isAdminAuthenticated', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    expires: new Date(0)
-  })
+  // Clear the JWT token by setting an expired token
+  response.headers.set('Set-Cookie', 'admin_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT')
 
   return response
 }

@@ -15,9 +15,6 @@ export const authConfig = {
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
-        // Check if user is admin
-        const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
-        session.user.isAdmin = adminEmails.includes(session.user.email || '');
       }
       return session;
     },

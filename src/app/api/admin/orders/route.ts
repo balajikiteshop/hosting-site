@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic' // Force dynamic route handling
+
 export async function GET(request: NextRequest) {
   try {
     // The middleware ensures this endpoint is only accessible by authenticated admins
@@ -27,7 +29,8 @@ export async function GET(request: NextRequest) {
         user: {
           select: {
             name: true,
-            email: true
+            email: true,
+            phone: true
           }
         }
       }
@@ -69,7 +72,8 @@ export async function PUT(request: NextRequest) {
         user: {
           select: {
             name: true,
-            email: true
+            email: true,
+            phone: true
           }
         }
       }

@@ -2,7 +2,6 @@ import { NextAuthConfig } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from '@/lib/prisma'
-import { isAdmin } from '@/lib/admin'
 
 export const authConfig = {
   debug: process.env.NODE_ENV === 'development',
@@ -28,28 +27,14 @@ export const authConfig = {
     error: '/auth/error',
   },
   callbacks: {
-    async authorized({ auth, request }) {
-      // Allow public routes
-      if (!request.nextUrl.pathname.startsWith('/admin')) {
-        return true
-      }
-
-      // Protect admin routes
-      if (auth?.user?.email) {
-        return isAdmin(auth.user.email)
-      }
-
-      return false
-    },
     async session({ session, token }) {
       return {
         ...session,
         user: {
           ...session.user,
-          id: token.sub,
-          isAdmin: isAdmin(session.user?.email),
-        },
+          id: token.sub
+        }
       }
-    },
-  },
+    }
+  }
 } satisfies NextAuthConfig

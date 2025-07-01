@@ -74,22 +74,6 @@ export function UserMenu() {
                 </Link>
               )}
             </Menu.Item>
-
-            {session.user?.isAdmin && (
-              <Menu.Item>
-                {({ active }) => (
-                  <Link
-                    href="/admin"
-                    className={`${
-                      active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                    } flex items-center px-4 py-2 text-sm`}
-                  >
-                    <Settings className="mr-3 h-5 w-5" />
-                    Admin Dashboard
-                  </Link>
-                )}
-              </Menu.Item>
-            )}
           </div>
 
           <div className="py-1">
