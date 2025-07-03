@@ -3,17 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.12.4",
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate --no-engine && next build",
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate --no-engine",
-    "prisma:migrate": "prisma migrate deploy",
-    "prisma:seed": "prisma db seed"
+    "prisma:migrate": "prisma migrate deploy"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
