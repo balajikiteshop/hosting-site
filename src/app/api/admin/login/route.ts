@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isValidAdminCredentials, signAdminToken } from '@/lib/admin-auth'
+import { clearConflictingCookies } from '@/lib/auth-security'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     
     const response = NextResponse.json({ success: true })
 
-    // Set simple JWT cookie
+    // Set admin JWT cookie and clear any conflicting user authentication
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -25,7 +26,8 @@ export async function POST(request: NextRequest) {
       maxAge: 24 * 60 * 60 // 24 hours
     })
 
-    return response
+    // Clear any existing user token to prevent conflicts
+    return clearConflictingCookies(response, 'admin')
 
   } catch (error) {
     console.error('Login error:', error)

@@ -1,12 +1,12 @@
 import { createRazorpayOrder } from '@/lib/razorpay'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getUserFromRequest } from '@/lib/user-auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.email) {
+    const userPayload = await getUserFromRequest(request)
+    if (!userPayload) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     
     // Get user from database
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { email: userPayload.email }
     })
 
     if (!user) {

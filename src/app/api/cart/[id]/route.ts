@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getUserFromRequest } from '@/lib/user-auth'
 
 // Update cart item quantity
 export async function PATCH(
@@ -8,10 +8,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-    const userId = session?.user?.id
+    const user = await getUserFromRequest(request)
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -46,7 +45,7 @@ export async function PATCH(
     }
 
     // Verify ownership
-    if (cartItem.cart.userId !== userId) {
+    if (cartItem.cart.userId !== user.id) {
       return NextResponse.json(
         { error: 'Not authorized' },
         { status: 403 }
@@ -92,10 +91,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-    const userId = session?.user?.id
+    const user = await getUserFromRequest(request)
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -115,7 +113,7 @@ export async function DELETE(
       )
     }
 
-    if (cartItem.cart.userId !== userId) {
+    if (cartItem.cart.userId !== user.id) {
       return NextResponse.json(
         { error: 'Not authorized' },
         { status: 403 }

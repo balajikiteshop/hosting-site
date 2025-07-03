@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
-import { redirect } from 'next/navigation'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import Image from 'next/image'
 import type { Cart } from '@/types/product'
+import { useUser } from '@/contexts/UserContext'
 
 declare global {
   interface Window {
@@ -36,7 +35,7 @@ const loadRazorpay = () => {
 }
 
 export default function CheckoutPage() {
-  const { data: session, status } = useSession()
+  const { user, loading: userLoading } = useUser()
   const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -50,19 +49,20 @@ export default function CheckoutPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      redirect('/auth/signin?callbackUrl=/checkout')
+    if (!userLoading && !user) {
+      router.push('/login?redirect=checkout')
+      return
     }
 
     // Pre-fill form with user data if available
-    if (session?.user?.name || session?.user?.email) {
+    if (user?.name || user?.email) {
       setFormData(prev => ({
         ...prev,
-        customerName: session?.user?.name || prev.customerName,
-        customerEmail: session?.user?.email || prev.customerEmail
+        customerName: user?.name || prev.customerName,
+        customerEmail: user?.email || prev.customerEmail
       }))
     }
-  }, [session, status])
+  }, [user, userLoading, router])
 
   // Fetch cart data
   const fetchCart = async () => {
@@ -70,7 +70,8 @@ export default function CheckoutPage() {
       const res = await fetch('/api/cart')
       if (!res.ok) {
         if (res.status === 401) {
-          redirect('/auth/signin?callbackUrl=/checkout')
+          router.push('/login?redirect=checkout')
+          return
         }
         throw new Error('Failed to fetch cart')
       }
@@ -85,8 +86,10 @@ export default function CheckoutPage() {
   }
 
   useEffect(() => {
-    fetchCart()
-  }, [])
+    if (!userLoading && user) {
+      fetchCart()
+    }
+  }, [user, userLoading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -193,7 +196,7 @@ export default function CheckoutPage() {
     }
   }
 
-  if (loading) {
+  if (userLoading || loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center h-64">
@@ -201,6 +204,11 @@ export default function CheckoutPage() {
         </div>
       </div>
     )
+  }
+
+  if (!user) {
+    // This should not happen as we redirect above, but adding as fallback
+    return null
   }
 
   if (error) {

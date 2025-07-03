@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import { jwtVerify, SignJWT } from 'jose'
 import type { NextRequest } from 'next/server'
 
-const secretKey = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || 'fallback-secret-key-123')
+const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key-123')
 
 export async function signAdminToken() {
   const token = await new SignJWT({ 

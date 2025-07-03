@@ -1,6 +1,6 @@
-import { auth } from './app/auth'
 import { NextResponse } from 'next/server'
 import { adminMiddleware } from './middleware/admin'
+import { userMiddleware } from './middleware/user'
 import type { NextRequest } from 'next/server'
 
 // Add security headers to a response
@@ -16,15 +16,28 @@ function addSecurityHeaders(response: NextResponse) {
 
 // Main middleware function
 export async function middleware(request: NextRequest) {
-  // First check for admin routes
-  if (request.nextUrl.pathname.startsWith('/admin')) {
+  const { pathname } = request.nextUrl
+
+  // Handle admin routes - complete separation from user routes
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     const adminResponse = await adminMiddleware(request)
     if (adminResponse) {
       return addSecurityHeaders(adminResponse)
     }
+    // If admin middleware passes, continue with standard headers
+    const response = NextResponse.next()
+    return addSecurityHeaders(response)
   }
 
-  // For all other routes, apply standard auth and security headers
+  // Handle user routes - only for non-admin routes
+  if (!pathname.startsWith('/admin') && !pathname.startsWith('/api/admin')) {
+    const userResponse = await userMiddleware(request)
+    if (userResponse.status === 302) { // Redirect response
+      return addSecurityHeaders(userResponse)
+    }
+  }
+
+  // For all other routes, apply standard security headers
   const response = NextResponse.next()
   return addSecurityHeaders(response)
 }

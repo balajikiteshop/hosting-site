@@ -7,17 +7,35 @@ import { CheckCircle } from 'lucide-react'
 
 interface Order {
   id: string
-  orderNumber: string
-  totalAmount: number
-  customerName: string
-  customerEmail: string
+  amount: number
+  currency: string
   status: string
   paymentStatus: string
+  paymentId?: string
+  shippingInfo: any
+  createdAt: string
+  updatedAt: string
+  user: {
+    id: string
+    name: string
+    email: string
+  }
   items: Array<{
+    id: string
     quantity: number
     price: number
     product: {
+      id: string
       name: string
+      description: string
+      imageUrl: string
+    }
+    variant?: {
+      id: string
+      name: string
+      sku: string
+      imageUrl: string
+      attributes: any
     }
   }>
 }
@@ -98,7 +116,7 @@ export default function OrderSuccessPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Order Number</span>
-                <span className="font-medium">{order.orderNumber}</span>
+                <span className="font-medium">{order.id}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Status</span>
@@ -126,11 +144,11 @@ export default function OrderSuccessPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Name</span>
-                <span className="font-medium">{order.customerName}</span>
+                <span className="font-medium">{order.shippingInfo?.name || order.user.name}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Email</span>
-                <span className="font-medium">{order.customerEmail}</span>
+                <span className="font-medium">{order.shippingInfo?.email || order.user.email}</span>
               </div>
             </div>
           </div>
@@ -156,7 +174,7 @@ export default function OrderSuccessPage() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex justify-between items-center text-xl">
               <span className="font-bold text-gray-900">Total Amount</span>
-              <span className="text-2xl font-bold text-primary-600">₹{order.totalAmount.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-primary-600">₹{order.amount.toFixed(2)}</span>
             </div>
           </div>
         </div>

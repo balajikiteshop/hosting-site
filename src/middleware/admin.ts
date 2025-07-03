@@ -3,26 +3,24 @@ import type { NextRequest } from 'next/server'
 import { verifyAdminToken } from '@/lib/admin-auth'
 
 export async function adminMiddleware(request: NextRequest) {
-  // Skip auth check for login page and login API
-  if (request.nextUrl.pathname === '/admin/login' || 
-      request.nextUrl.pathname === '/api/admin/login') {
-    return NextResponse.next()
-  }
-
-  // Check if it's an admin route
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin') || 
-                      request.nextUrl.pathname.startsWith('/api/admin')
+  const { pathname } = request.nextUrl
   
-  if (!isAdminRoute) {
-    return NextResponse.next()
+  // Only handle admin routes
+  if (!pathname.startsWith('/admin') && !pathname.startsWith('/api/admin')) {
+    return null
   }
 
-  // Simple JWT verification
+  // Skip auth check for login page and login API
+  if (pathname === '/admin/login' || pathname === '/api/admin/login') {
+    return null // Let the request proceed normally
+  }
+
+  // Verify admin authentication
   const isAuthenticated = await verifyAdminToken(request)
 
   if (!isAuthenticated) {
     // Return 401 for API routes
-    if (request.nextUrl.pathname.startsWith('/api/')) {
+    if (pathname.startsWith('/api/admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     // Redirect to login for page routes
@@ -30,5 +28,6 @@ export async function adminMiddleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return NextResponse.next()
+  // Admin is authenticated, let request proceed
+  return null
 }

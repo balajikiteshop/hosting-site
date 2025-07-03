@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
-import { auth } from '@/auth'
+import { getUserFromCookies } from '@/lib/user-auth'
 
 type CartItem = {
   productId: string
@@ -9,12 +9,12 @@ type CartItem = {
 }
 
 export async function getCart() {
-  const session = await auth()
+  const userPayload = await getUserFromCookies()
 
   // For authenticated users, get cart from database
-  if (session?.user?.id) {
+  if (userPayload?.id) {
     let cart = await prisma.cart.findFirst({
-      where: { userId: session.user.id },
+      where: { userId: userPayload.id },
       include: {
         items: {
           include: {
@@ -28,7 +28,7 @@ export async function getCart() {
     if (!cart) {
       cart = await prisma.cart.create({
         data: {
-          userId: session.user.id
+          userId: userPayload.id
         },
         include: {
           items: {
@@ -78,18 +78,18 @@ export async function getCart() {
 }
 
 export async function addToCart(item: CartItem) {
-  const session = await auth()
+  const userPayload = await getUserFromCookies()
 
   // For authenticated users, add to database cart
-  if (session?.user?.id) {
+  if (userPayload?.id) {
     let cart = await prisma.cart.findFirst({
-      where: { userId: session.user.id }
+      where: { userId: userPayload.id }
     })
 
     if (!cart) {
       cart = await prisma.cart.create({
         data: {
-          userId: session.user.id
+          userId: userPayload.id
         }
       })
     }
@@ -149,12 +149,12 @@ export async function addToCart(item: CartItem) {
 }
 
 export async function removeFromCart(productId: string, variantId?: string) {
-  const session = await auth()
+  const userPayload = await getUserFromCookies()
 
   // For authenticated users, remove from database cart
-  if (session?.user?.id) {
+  if (userPayload?.id) {
     const cart = await prisma.cart.findFirst({
-      where: { userId: session.user.id }
+      where: { userId: userPayload.id }
     })
 
     if (cart) {

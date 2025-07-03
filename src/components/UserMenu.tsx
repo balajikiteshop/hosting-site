@@ -2,38 +2,38 @@
 
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
-import { User, LogOut, Settings, ShoppingBag } from 'lucide-react';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { User, LogOut, ShoppingBag } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export function UserMenu() {
-  const { data: session, status } = useSession();
+  const { user, logout, loading } = useUser();
 
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="h-10 w-10 animate-pulse rounded-full bg-gray-200" />
     );
   }
 
-  if (!session) {
+  if (!user) {
     return (
-      <button
-        onClick={() => signIn('google')}
+      <Link
+        href="/login"
         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
       >
         Sign In
-      </button>
+      </Link>
     );
   }
 
   return (
     <Menu as="div" className="relative inline-block text-left">
       <Menu.Button className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-        {session.user?.image ? (
+        {user.image ? (
           <Image
-            src={session.user.image}
-            alt={session.user.name || 'User avatar'}
+            src={user.image}
+            alt={user.name || 'User avatar'}
             width={40}
             height={40}
             className="rounded-full"
@@ -56,7 +56,7 @@ export function UserMenu() {
           <div className="px-4 py-3">
             <p className="text-sm">Signed in as</p>
             <p className="text-sm font-medium text-gray-900 truncate">
-              {session.user?.email}
+              {user.email}
             </p>
           </div>
 
@@ -80,7 +80,7 @@ export function UserMenu() {
             <Menu.Item>
               {({ active }) => (
                 <button
-                  onClick={() => signOut()}
+                  onClick={() => logout()}
                   className={`${
                     active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
                   } flex w-full items-center px-4 py-2 text-sm`}

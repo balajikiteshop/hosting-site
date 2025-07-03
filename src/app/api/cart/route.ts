@@ -1,30 +1,18 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getUserFromRequest } from '@/lib/user-auth'
 
 // Get cart contents
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get the auth session
-    const session = await auth()
+    // Get the authenticated user from JWT
+    const user = await getUserFromRequest(request)
 
     // Check if user is authenticated
-    if (!session || !session.user?.email) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      )
-    }
-
-    // Get user by email
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
       )
     }
 
@@ -69,23 +57,12 @@ export async function GET() {
 // Add item to cart 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session || !session.user?.email) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
+    const user = await getUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
+        { error: 'Authentication required' },
+        { status: 401 }
       )
     }
 
@@ -145,25 +122,14 @@ export async function POST(request: NextRequest) {
 }
 
 // Clear cart
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session || !session.user?.email) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
+    const user = await getUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
+        { error: 'Authentication required' },
+        { status: 401 }
       )
     }
 

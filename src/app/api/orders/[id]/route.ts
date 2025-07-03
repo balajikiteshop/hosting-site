@@ -1,14 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/auth/auth'
+import { getUserFromRequest } from '@/lib/user-auth'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireAuth()
-    if (!session?.user?.id) {
+    const user = await getUserFromRequest(request)
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -68,8 +68,8 @@ export async function GET(
       )
     }
 
-    // Check if user owns the order or is admin
-    if (order.user.id !== session.user.id) {
+    // Check if user owns the order
+    if (order.user.id !== user.id) {
       return NextResponse.json(
         { error: 'Not authorized' },
         { status: 403 }
