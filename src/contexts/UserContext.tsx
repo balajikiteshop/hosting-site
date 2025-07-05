@@ -78,7 +78,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ name, email, password }),
       });
 
-      return res.ok;
+      if (res.ok) {
+        const data = await res.json();
+        // Update user state with the newly created user
+        setUser(data.user);
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Registration failed:', error);
       return false;

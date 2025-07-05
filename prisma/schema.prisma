@@ -137,17 +137,23 @@ model Order {
 }
 
 model OrderItem {
-  id        String          @id @default(cuid())
-  quantity  Int
-  price     Float // Final price at time of order
-  orderId   String
-  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product         @relation(fields: [productId], references: [id])
-  variantId String?
-  variant   ProductVariant? @relation(fields: [variantId], references: [id])
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id            String          @id @default(cuid())
+  quantity      Int
+  price         Float // Final price at time of order
+  // Store product information at time of order for historical data
+  productName   String // Product name at time of order
+  productImage  String? // Product image at time of order
+  variantName   String? // Variant name at time of order (if applicable)
+  variantSku    String? // Variant SKU at time of order (if applicable)
+  
+  orderId       String
+  order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product?        @relation(fields: [productId], references: [id])
+  variantId     String?
+  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([orderId])
   @@index([productId])

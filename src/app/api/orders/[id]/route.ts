@@ -2,6 +2,10 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/lib/user-auth'
 
+// Disable caching for order endpoints
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -39,6 +43,8 @@ export async function GET(
             id: true,
             quantity: true,
             price: true,
+            productId: true,
+            variantId: true,
             product: {
               select: {
                 id: true,
@@ -76,7 +82,22 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(order)
+    // Handle deleted products gracefully
+    const safeOrder = {
+      ...order,
+      items: order.items.map(item => ({
+        ...item,
+        product: item.product || {
+          id: item.productId,
+          name: 'Product No Longer Available',
+          description: 'This product has been removed from our catalog',
+          imageUrl: null
+        },
+        variant: item.variant || null
+      }))
+    }
+
+    return NextResponse.json(safeOrder)
 
   } catch (error) {
     console.error('Error fetching order:', error)

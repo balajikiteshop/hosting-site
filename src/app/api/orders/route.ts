@@ -3,6 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/lib/user-auth'
 
+// Disable caching for order endpoints
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function POST(request: NextRequest) {
   try {
     const userPayload = await getUserFromRequest(request)
@@ -46,7 +50,8 @@ export async function POST(request: NextRequest) {
           id: true,
           name: true,
           price: true,
-          stock: true
+          stock: true,
+          imageUrl: true
         }
       })
 
@@ -69,7 +74,9 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             price: true,
-            stock: true
+            stock: true,
+            sku: true,
+            imageUrl: true
           }
         })
 
@@ -101,7 +108,11 @@ export async function POST(request: NextRequest) {
         productId: item.productId,
         variantId: item.variantId,
         quantity: item.quantity,
-        price: finalPrice
+        price: finalPrice,
+        productName: product.name,
+        productImage: variant?.imageUrl || product.imageUrl,
+        variantName: variant?.name,
+        variantSku: variant?.sku
       })
 
       // Update stock

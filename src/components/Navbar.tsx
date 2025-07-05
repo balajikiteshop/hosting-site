@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react'
 import { ShoppingCart, Menu, X, LogOut } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { UserMenu } from './UserMenu'
+import { useCart } from '@/contexts/CartContext'
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [hasScrolled, setHasScrolled] = useState(false)
   const pathname = usePathname()
+  const { cartCount } = useCart()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -69,12 +71,17 @@ export default function Navbar() {
             </Link>
             <Link 
               href="/cart" 
-              className={`flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-all duration-200 font-medium bg-gray-50 px-4 py-2 rounded-lg hover:bg-blue-50 group ${
+              className={`flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-all duration-200 font-medium bg-gray-50 px-4 py-2 rounded-lg hover:bg-blue-50 group relative ${
                 isActive('/cart') ? 'text-primary-600 bg-blue-50' : ''
               }`}
             >
               <ShoppingCart size={20} className="group-hover:scale-110 transition-transform" />
               <span>Cart</span>
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {cartCount}
+                </span>
+              )}
             </Link>
             <UserMenu />
           </div>
@@ -134,7 +141,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/cart"
-                className={`flex items-center justify-between px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`flex items-center justify-between px-4 py-3 rounded-lg font-medium transition-all duration-200 relative ${
                   isActive('/cart') 
                   ? 'text-primary-600 bg-blue-50'
                   : 'text-gray-700 hover:text-primary-600 hover:bg-blue-50'
@@ -142,7 +149,14 @@ export default function Navbar() {
                 onClick={() => setIsOpen(false)}
               >
                 <span>Cart</span>
-                <ShoppingCart size={20} />
+                <div className="relative">
+                  <ShoppingCart size={20} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                      {cartCount}
+                    </span>
+                  )}
+                </div>
               </Link>
             </div>
           </div>

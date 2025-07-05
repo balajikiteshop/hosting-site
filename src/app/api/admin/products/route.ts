@@ -1,19 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { createAdminResponse, createAdminErrorResponse } from '@/lib/admin-response'
+import { parsePaginationParams, createPaginationMeta, createPaginatedResponse } from '@/lib/pagination'
 
-export async function GET() {
+// Disable caching for admin endpoints
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+export async function GET(request: NextRequest) {
   try {
     // The middleware ensures this endpoint is only accessible by authenticated admins
+    const { searchParams } = new URL(request.url)
+    
+    // Parse pagination parameters
+    const { page, limit, skip } = parsePaginationParams(searchParams)
+    const search = searchParams.get('search') || ''
+    const categoryId = searchParams.get('categoryId') || ''
+    const isActive = searchParams.get('isActive')
+    
+    // Build where clause
+    const where: any = {}
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+    
+    if (categoryId) {
+      where.categoryId = categoryId
+    }
+    
+    if (isActive !== null && isActive !== undefined) {
+      where.isActive = isActive === 'true'
+    }
+    
+    // Get total count for pagination metadata
+    const totalCount = await prisma.product.count({ where })
+    
+    // Get paginated products
     const products = await prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
       include: {
         category: true,
-        variants: true
+        variants: true,
+        _count: {
+          select: {
+            orderItems: true,
+            cartItems: true
+          }
+        }
       }
     })
-    return NextResponse.json(products)
+    
+    // Create pagination metadata and response
+    const pagination = createPaginationMeta(page, limit, totalCount)
+    const response = createPaginatedResponse(products, pagination)
+    
+    return createAdminResponse(response)
   } catch (error) {
     console.error('Error fetching products:', error)
-    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
+    return createAdminErrorResponse('Failed to fetch products', 500)
   }
 }
 
@@ -38,9 +89,9 @@ export async function POST(request: NextRequest) {
         variants: true
       }
     })
-    return NextResponse.json(product)
+    return createAdminResponse(product)
   } catch (error) {
     console.error('Error creating product:', error)
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 })
+    return createAdminErrorResponse('Failed to create product', 500)
   }
 }

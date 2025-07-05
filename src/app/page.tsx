@@ -2,62 +2,73 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import AddToCartButton from '@/components/AddToCartButton'
+import SafeImage from '@/components/SafeImage'
 import { formatPrice } from '@/lib/utils'
 import { Mail, Phone, MapPin } from 'lucide-react'
 import type { Product } from '@/types/product'
 
+// Disable caching for this page to show real-time product updates
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getFeaturedProducts(): Promise<Product[]> {
-  // Get latest active products
-  const rawProducts = await prisma.product.findMany({
-    take: 4,
-    where: { 
-      isActive: true 
-    },
-    orderBy: { 
-      createdAt: 'desc' 
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      price: true,
-      imageUrl: true,
-      stock: true,
-      categoryId: true,
-      isActive: true,
-      category: {
-        select: {
-          id: true,
-          name: true,
-          description: true
-        }
+  try {
+    // Get latest active products with explicit field selection for security
+    const rawProducts = await prisma.product.findMany({
+      take: 4,
+      where: { 
+        isActive: true 
       },
-      variants: {
-        where: { isActive: true },
-        orderBy: { price: 'asc' },
-        select: {
-          id: true,
-          sku: true,
-          name: true,
-          price: true,
-          stock: true,
-          imageUrl: true,
-          attributes: true,
-          isActive: true,
-          productId: true
+      orderBy: { 
+        createdAt: 'desc' 
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        imageUrl: true,
+        stock: true,
+        categoryId: true,
+        isActive: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            description: true
+          }
+        },
+        variants: {
+          where: { isActive: true },
+          orderBy: { price: 'asc' },
+          select: {
+            id: true,
+            sku: true,
+            name: true,
+            price: true,
+            stock: true,
+            imageUrl: true,
+            attributes: true,
+            isActive: true,
+            productId: true
+          }
         }
       }
-    }
-  })
+    })
 
-  // Convert the raw products to match our Product type
-  return rawProducts.map(p => ({
-    ...p,
-    variants: p.variants.map(v => ({
-      ...v,
-      attributes: v.attributes as Record<string, string | undefined>
+    // Convert the raw products to match our Product type
+    return rawProducts.map(p => ({
+      ...p,
+      variants: p.variants.map(v => ({
+        ...v,
+        attributes: v.attributes as Record<string, string | undefined>
+      }))
     }))
-  }))
+  } catch (error) {
+    console.error('Error fetching featured products:', error)
+    // Return empty array on error to prevent app crash
+    return []
+  }
 }
 
 export default async function Home() {
@@ -95,15 +106,23 @@ export default async function Home() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {products.map((product) => (
-              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 <Link href={`/products/${product.id}`}>
                   <div className="relative h-48">
-                    <Image
-                      src={product.imageUrl || '/placeholder.png'}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                    />
+                    {product.imageUrl ? (
+                      <SafeImage
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                        fallbackClassName="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center text-gray-400"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center text-gray-400">
+                        <div className="text-3xl mb-1 animate-float">🪁</div>
+                        <span className="text-xs font-medium">No Image</span>
+                      </div>
+                    )}
                   </div>
                 </Link>
 

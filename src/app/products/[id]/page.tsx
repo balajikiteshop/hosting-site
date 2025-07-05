@@ -3,53 +3,79 @@ import { notFound } from 'next/navigation'
 import ProductDetails from './ProductDetails'
 import type { Product, ProductVariant } from '@/types/product'
 
+// Disable caching for this page to show real-time product updates
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getProduct(id: string): Promise<Product | null> {
-  const product = await prisma.product.findFirst({
-    where: { 
-      id,
-      isActive: true 
-    },
-    include: {
-      category: true,
-      variants: {
-        where: { isActive: true },
-        orderBy: { price: 'asc' }
-      }
+  try {
+    // Validate the product ID parameter
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return null
     }
-  })
 
-  if (!product) {
-    return null
-  }
+    // Sanitize the ID (basic validation for common ID formats)
+    const sanitizedId = id.trim()
+    if (sanitizedId.length > 50 || !/^[a-zA-Z0-9\-_]+$/.test(sanitizedId)) {
+      return null
+    }
 
-  // Convert decimal prices to numbers and ensure all required fields are present
-  return {
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    price: Number(product.price),
-    imageUrl: product.imageUrl,
-    stock: product.stock,
-    categoryId: product.categoryId,
-    isActive: product.isActive,
-    variants: product.variants.map(v => ({
-      id: v.id,
-      sku: v.sku,
-      name: v.name,
-      price: Number(v.price),
-      stock: v.stock,
-      imageUrl: v.imageUrl,
-      attributes: v.attributes as Record<string, string>,
-      productId: v.productId,
-      isActive: v.isActive
-    })),
-    category: product.category
-      ? {
-          id: product.category.id,
-          name: product.category.name,
-          description: product.category.description
+    const product = await prisma.product.findFirst({
+      where: { 
+        id: sanitizedId,
+        isActive: true 
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        imageUrl: true,
+        stock: true,
+        categoryId: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            description: true
+          }
+        },
+        variants: {
+          where: { isActive: true },
+          orderBy: { price: 'asc' },
+          select: {
+            id: true,
+            sku: true,
+            name: true,
+            price: true,
+            stock: true,
+            imageUrl: true,
+            attributes: true,
+            isActive: true,
+            productId: true
+          }
         }
-      : null
+      }
+    })
+
+    if (!product) {
+      return null
+    }
+
+    // Convert the raw product to match our Product type
+    return {
+      ...product,
+      variants: product.variants.map(v => ({
+        ...v,
+        attributes: v.attributes as Record<string, string | undefined>
+      }))
+    }
+  } catch (error) {
+    console.error('Error fetching product:', error)
+    return null
   }
 }
 

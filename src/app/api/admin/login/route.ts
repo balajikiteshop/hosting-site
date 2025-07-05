@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isValidAdminCredentials, signAdminToken } from '@/lib/admin-auth'
 import { clearConflictingCookies } from '@/lib/auth-security'
 
+// Disable caching for admin endpoints
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json()

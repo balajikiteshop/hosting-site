@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Edit, Trash2, Package, AlertCircle } from 'lucide-react'
-import Image from 'next/image'
+import { Plus, Edit, Trash2, Package, AlertCircle, Search } from 'lucide-react'
+import SafeImage from '@/components/SafeImage'
 import AddProductModal from '@/components/AddProductModal'
 import AddCategoryModal from '@/components/AddCategoryModal'
+import Pagination from '@/components/Pagination'
 
 interface Product {
   id: string
@@ -78,6 +79,12 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'orders'>('products')
   const [orderFilter, setOrderFilter] = useState<string>('all')
+  
+  // Pagination state
+  const [productsPagination, setProductsPagination] = useState({ page: 1, totalPages: 1, totalCount: 0 })
+  const [categoriesPagination, setCategoriesPagination] = useState({ page: 1, totalPages: 1, totalCount: 0 })
+  const [ordersPagination, setOrdersPagination] = useState({ page: 1, totalPages: 1, totalCount: 0 })
+  const [searchTerm, setSearchTerm] = useState('')
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false)
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -92,12 +99,28 @@ export default function AdminDashboard() {
     return res
   }
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (page = 1, search = '') => {
     try {
-      const res = await fetchWithAuth('/api/admin/products')
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '10',
+        ...(search && { search })
+      })
+      const res = await fetchWithAuth(`/api/admin/products?${params}`)
       if (res.ok) {
-        const data = await res.json()
-        setProducts(data)
+        const response = await res.json()
+        // Handle paginated response format
+        if (response.data && response.pagination) {
+          setProducts(response.data)
+          setProductsPagination({
+            page: response.pagination.page,
+            totalPages: response.pagination.totalPages,
+            totalCount: response.pagination.totalCount
+          })
+        } else {
+          // Fallback for non-paginated response
+          setProducts(response)
+        }
       }
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -105,12 +128,28 @@ export default function AdminDashboard() {
     }
   }
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (page = 1, search = '') => {
     try {
-      const res = await fetchWithAuth('/api/admin/categories')
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '10',
+        ...(search && { search })
+      })
+      const res = await fetchWithAuth(`/api/admin/categories?${params}`)
       if (res.ok) {
-        const data = await res.json()
-        setCategories(data)
+        const response = await res.json()
+        // Handle paginated response format
+        if (response.data && response.pagination) {
+          setCategories(response.data)
+          setCategoriesPagination({
+            page: response.pagination.page,
+            totalPages: response.pagination.totalPages,
+            totalCount: response.pagination.totalCount
+          })
+        } else {
+          // Fallback for non-paginated response
+          setCategories(response)
+        }
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -118,12 +157,29 @@ export default function AdminDashboard() {
     }
   }
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (page = 1, search = '', status = 'all') => {
     try {
-      const res = await fetchWithAuth('/api/admin/orders')
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '10',
+        ...(search && { search }),
+        ...(status !== 'all' && { status })
+      })
+      const res = await fetchWithAuth(`/api/admin/orders?${params}`)
       if (res.ok) {
-        const data = await res.json()
-        setOrders(data)
+        const response = await res.json()
+        // Handle paginated response format
+        if (response.data && response.pagination) {
+          setOrders(response.data)
+          setOrdersPagination({
+            page: response.pagination.page,
+            totalPages: response.pagination.totalPages,
+            totalCount: response.pagination.totalCount
+          })
+        } else {
+          // Fallback for non-paginated response
+          setOrders(response)
+        }
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -136,15 +192,49 @@ export default function AdminDashboard() {
     setError(null)
     try {
       await Promise.all([
-        fetchProducts(),
-        fetchCategories(),
-        fetchOrders()
+        fetchProducts(productsPagination.page, searchTerm),
+        fetchCategories(categoriesPagination.page, searchTerm),
+        fetchOrders(ordersPagination.page, searchTerm, orderFilter)
       ])
     } catch (err) {
       console.error('Failed to fetch data:', err)
       setError('Failed to fetch data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Pagination handlers
+  const handleProductsPageChange = (newPage: number) => {
+    setProductsPagination(prev => ({ ...prev, page: newPage }))
+    fetchProducts(newPage, searchTerm)
+  }
+
+  const handleCategoriesPageChange = (newPage: number) => {
+    setCategoriesPagination(prev => ({ ...prev, page: newPage }))
+    fetchCategories(newPage, searchTerm)
+  }
+
+  const handleOrdersPageChange = (newPage: number) => {
+    setOrdersPagination(prev => ({ ...prev, page: newPage }))
+    fetchOrders(newPage, searchTerm, orderFilter)
+  }
+
+  // Search handler
+  const handleSearch = (term: string) => {
+    setSearchTerm(term)
+    // Reset to page 1 when searching
+    setProductsPagination(prev => ({ ...prev, page: 1 }))
+    setCategoriesPagination(prev => ({ ...prev, page: 1 }))
+    setOrdersPagination(prev => ({ ...prev, page: 1 }))
+    
+    // Fetch data based on active tab
+    if (activeTab === 'products') {
+      fetchProducts(1, term)
+    } else if (activeTab === 'categories') {
+      fetchCategories(1, term)
+    } else if (activeTab === 'orders') {
+      fetchOrders(1, term, orderFilter)
     }
   }
 
@@ -286,7 +376,7 @@ export default function AdminDashboard() {
   const renderProductsTab = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Products ({products.length})</h2>
+        <h2 className="text-2xl font-semibold">Products ({productsPagination.totalCount})</h2>
         <button
           onClick={() => setIsAddProductModalOpen(true)}
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
@@ -296,14 +386,33 @@ export default function AdminDashboard() {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        />
+      </div>
+
       <div className="bg-white shadow-sm rounded-lg divide-y divide-gray-200">
-        {products.map(product => (
+        {products.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">
+            {searchTerm ? 'No products found matching your search.' : 'No products available.'}
+          </div>
+        ) : (
+          products.map(product => (
           <div key={product.id} className={`p-6 ${!product.isActive ? 'opacity-60' : ''}`}>
             <div className="flex items-start justify-between">
               <div className="flex space-x-4">
                 {product.imageUrl && (
                   <div className="flex-shrink-0 w-24 h-24 relative">
-                    <Image
+                    <SafeImage
                       src={product.imageUrl}
                       alt={product.name}
                       fill
@@ -358,15 +467,23 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
+      
+      <Pagination
+        currentPage={productsPagination.page}
+        totalPages={productsPagination.totalPages}
+        totalCount={productsPagination.totalCount}
+        onPageChange={handleProductsPageChange}
+      />
     </div>
   )
 
   const renderCategoriesTab = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Categories ({categories.length})</h2>
+        <h2 className="text-2xl font-semibold">Categories ({categoriesPagination.totalCount})</h2>
         <button
           onClick={() => setIsAddCategoryModalOpen(true)}
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
@@ -376,8 +493,27 @@ export default function AdminDashboard() {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search categories..."
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        />
+      </div>
+
       <div className="bg-white shadow-sm rounded-lg divide-y divide-gray-200">
-        {categories.map(category => (
+        {categories.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">
+            {searchTerm ? 'No categories found matching your search.' : 'No categories available.'}
+          </div>
+        ) : (
+          categories.map(category => (
           <div key={category.id} className="p-6">
             <div className="flex justify-between items-start">
               <div>
@@ -406,8 +542,16 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
+      
+      <Pagination
+        currentPage={categoriesPagination.page}
+        totalPages={categoriesPagination.totalPages}
+        totalCount={categoriesPagination.totalCount}
+        onPageChange={handleCategoriesPageChange}
+      />
     </div>
   )
 
@@ -419,31 +563,51 @@ export default function AdminDashboard() {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold">Orders ({filteredOrders.length})</h2>
-          <select 
-            value={orderFilter}
-            onChange={(e) => setOrderFilter(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2"
-          >
-            <option value="all">All Orders</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <h2 className="text-2xl font-semibold">Orders ({ordersPagination.totalCount})</h2>
+          <div className="flex space-x-3">
+            <select 
+              value={orderFilter}
+              onChange={(e) => {
+                setOrderFilter(e.target.value)
+                setOrdersPagination(prev => ({ ...prev, page: 1 }))
+                fetchOrders(1, searchTerm, e.target.value)
+              }}
+              className="rounded-md border border-gray-300 px-3 py-2"
+            >
+              <option value="all">All Orders</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
         </div>
 
-        {filteredOrders.length === 0 ? (
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search orders..."
+            value={searchTerm}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          />
+        </div>
+
+        {orders.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg">
             <Package className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No orders</h3>
             <p className="mt-1 text-sm text-gray-500">
-              No {orderFilter === 'all' ? '' : orderFilter} orders found.
+              {searchTerm ? 'No orders found matching your search.' : `No ${orderFilter === 'all' ? '' : orderFilter} orders found.`}
             </p>
           </div>
         ) : (
           <div className="bg-white shadow-sm rounded-lg divide-y divide-gray-200">
-            {filteredOrders.map(order => (
+            {orders.map(order => (
               <div key={order.id} className="p-6 space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
@@ -501,6 +665,13 @@ export default function AdminDashboard() {
             ))}
           </div>
         )}
+        
+        <Pagination
+          currentPage={ordersPagination.page}
+          totalPages={ordersPagination.totalPages}
+          totalCount={ordersPagination.totalCount}
+          onPageChange={handleOrdersPageChange}
+        />
       </div>
     )
   }
@@ -544,7 +715,7 @@ export default function AdminDashboard() {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Products ({products.length})
+          Products ({productsPagination.totalCount})
         </button>
         <button
           onClick={() => setActiveTab('categories')}
@@ -554,7 +725,7 @@ export default function AdminDashboard() {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Categories ({categories.length})
+          Categories ({categoriesPagination.totalCount})
         </button>
         <button
           onClick={() => setActiveTab('orders')}
@@ -564,7 +735,7 @@ export default function AdminDashboard() {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Orders ({orders.length})
+          Orders ({ordersPagination.totalCount})
         </button>
       </div>
 

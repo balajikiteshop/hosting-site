@@ -2,65 +2,106 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import Image from 'next/image'
 import AddToCartButton from '@/components/AddToCartButton'
+import AuthLink from '@/components/AuthLink'
+import SafeImage from '@/components/SafeImage'
 
-async function getProducts() {
-  const rawProducts = await prisma.product.findMany({
-    where: { isActive: true },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      price: true,
-      stock: true,
-      imageUrl: true,
-      categoryId: true,
-      isActive: true,
-      category: {
-        select: {
-          id: true,
-          name: true,
-          description: true
-        }
-      },
-      variants: {
-        where: { isActive: true },
-        orderBy: { price: 'asc' },
-        select: {
-          id: true,
-          sku: true,
-          name: true,
-          price: true,
-          stock: true,
-          imageUrl: true,
-          attributes: true,
-          isActive: true,
-          productId: true
-        }
+// Disable caching for this page to show real-time product updates
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+async function getProducts(categoryId?: string) {
+  try {
+    // Build where clause with proper validation
+    const whereClause: any = { isActive: true }
+    
+    // Validate and add category filter if provided
+    if (categoryId && typeof categoryId === 'string' && categoryId.trim().length > 0) {
+      // Validate categoryId format (should be a valid UUID or string)
+      if (categoryId.length <= 50 && /^[a-zA-Z0-9\-_]+$/.test(categoryId)) {
+        whereClause.categoryId = categoryId
       }
     }
-  })
 
-  // Convert the raw products to match our Product type
-  return rawProducts.map(p => ({
-    ...p,
-    variants: p.variants.map(v => ({
-      ...v,
-      attributes: v.attributes as Record<string, string | undefined>
+    const rawProducts = await prisma.product.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        stock: true,
+        imageUrl: true,
+        categoryId: true,
+        isActive: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            description: true
+          }
+        },
+        variants: {
+          where: { isActive: true },
+          orderBy: { price: 'asc' },
+          select: {
+            id: true,
+            sku: true,
+            name: true,
+            price: true,
+            stock: true,
+            imageUrl: true,
+            attributes: true,
+            isActive: true,
+            productId: true
+          }
+        }
+      }
+    })
+
+    // Convert the raw products to match our Product type
+    return rawProducts.map(p => ({
+      ...p,
+      variants: p.variants.map(v => ({
+        ...v,
+        attributes: v.attributes as Record<string, string | undefined>
+      }))
     }))
-  }))
+  } catch (error) {
+    console.error('Error fetching products:', error)
+    // Return empty array on error to prevent app crash
+    return []
+  }
 }
 
 async function getCategories() {
-  const categories = await prisma.category.findMany({
-    orderBy: { name: 'asc' }
-  })
-  return categories
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        description: true
+      }
+    })
+    return categories
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    // Return empty array on error to prevent app crash
+    return []
+  }
 }
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams
+}: {
+  searchParams: { category?: string }
+}) {
+  // Extract and validate search parameters
+  const categoryId = searchParams?.category
+
   const [products, categories] = await Promise.all([
-    getProducts(),
+    getProducts(categoryId),
     getCategories()
   ])
 
@@ -111,15 +152,19 @@ export default async function ProductsPage() {
               <div className="product-image-enhanced">
                 {product.imageUrl ? (
                   <div className="relative h-48">
-                    <Image
+                    <SafeImage
                       src={product.imageUrl}
                       alt={product.name}
                       fill
                       className="object-cover"
+                      fallbackClassName="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 rounded-lg"
                     />
                   </div>
                 ) : (
-                  <div className="text-6xl relative z-10 animate-float">🪁</div>
+                  <div className="relative h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+                    <div className="text-4xl mb-2 animate-float">🪁</div>
+                    <span className="text-sm font-medium">No Image Available</span>
+                  </div>
                 )}
               </div>
               <div className="p-6">
@@ -146,12 +191,12 @@ export default async function ProductsPage() {
                   </span>
                 </div>
                 <div className="flex space-x-2">
-                  <Link
+                  <AuthLink
                     href={`/products/${product.id}`}
                     className="btn-primary flex-1 text-center hover-lift"
                   >
                     View Details
-                  </Link>
+                  </AuthLink>
                   <AddToCartButton 
                     product={product}
                     quantity={1}

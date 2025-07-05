@@ -2,17 +2,41 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteImageFromImageKit } from '@/lib/imagekit-server'
 
+// Disable caching for this API route to show real-time product updates
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const product = await prisma.product.findUnique({
+    // Validate the product ID parameter
+    if (!params.id || typeof params.id !== 'string' || params.id.trim().length === 0) {
+      return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 })
+    }
+
+    // Sanitize the ID (basic validation for common ID formats)
+    const sanitizedId = params.id.trim()
+    if (sanitizedId.length > 50 || !/^[a-zA-Z0-9\-_]+$/.test(sanitizedId)) {
+      return NextResponse.json({ error: 'Invalid product ID format' }, { status: 400 })
+    }
+
+    const product = await prisma.product.findFirst({
       where: { 
-        id: params.id,
+        id: sanitizedId,
         isActive: true
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        stock: true,
+        imageUrl: true,
+        isActive: true,
+        createdAt: true,
+        categoryId: true,
         category: {
           select: {
             id: true,
@@ -22,7 +46,18 @@ export async function GET(
         },
         variants: {
           where: { isActive: true },
-          orderBy: { price: 'asc' }
+          orderBy: { price: 'asc' },
+          select: {
+            id: true,
+            sku: true,
+            name: true,
+            price: true,
+            stock: true,
+            imageUrl: true,
+            attributes: true,
+            isActive: true,
+            productId: true
+          }
         }
       }
     })

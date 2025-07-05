@@ -8,12 +8,24 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getUserFromRequest(request)
+    const userPayload = await getUserFromRequest(request)
 
-    if (!user) {
+    if (!userPayload) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+
+    // Verify user exists in database
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userPayload.id }
+    })
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       )
     }
 
@@ -45,7 +57,7 @@ export async function PATCH(
     }
 
     // Verify ownership
-    if (cartItem.cart.userId !== user.id) {
+    if (cartItem.cart.userId !== dbUser.id) {
       return NextResponse.json(
         { error: 'Not authorized' },
         { status: 403 }
@@ -91,12 +103,24 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getUserFromRequest(request)
+    const userPayload = await getUserFromRequest(request)
 
-    if (!user) {
+    if (!userPayload) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+
+    // Verify user exists in database
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userPayload.id }
+    })
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       )
     }
 
@@ -113,7 +137,7 @@ export async function DELETE(
       )
     }
 
-    if (cartItem.cart.userId !== user.id) {
+    if (cartItem.cart.userId !== dbUser.id) {
       return NextResponse.json(
         { error: 'Not authorized' },
         { status: 403 }

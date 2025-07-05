@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import AddToCartButton from '@/components/AddToCartButton';
 import VariantSelector from '@/components/VariantSelector';
+import SafeImage from '@/components/SafeImage';
 import type { Product, ProductVariant } from '@/types/product';
 import { formatPrice } from '@/lib/utils';
 
@@ -50,17 +50,22 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
         <div className="animate-slideIn">
           <div className="aspect-square rounded-lg overflow-hidden card-enhanced">
             {(selectedVariant?.imageUrl || product.imageUrl) ? (
-              <Image
-                src={selectedVariant?.imageUrl || product.imageUrl || ''}
-                alt={product.name}
-                width={600}
-                height={600}
-                className="w-full h-full object-cover hover-scale"
-                priority
-              />
+              <div className="relative w-full h-full">
+                <SafeImage
+                  src={selectedVariant?.imageUrl || product.imageUrl || ''}
+                  alt={product.name}
+                  width={600}
+                  height={600}
+                  className="w-full h-full object-cover hover-scale"
+                  priority
+                />
+                {/* SafeImage handles the placeholder internally */}
+              </div>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <span className="text-9xl animate-float">🪁</span>
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-400">
+                <div className="text-8xl mb-4 animate-float">🪁</div>
+                <span className="text-lg font-medium">No Image Available</span>
+                <span className="text-sm text-gray-500">Please check back later</span>
               </div>
             )}
           </div>
